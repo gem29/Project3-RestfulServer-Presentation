@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"> 
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+		<link rel="stylesheet" href="style.css"/>
+		<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+   		<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+			   integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+			   crossorigin=""></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+		<script type="application/javascript" src="https://cdn.jsdelivr.net/npm/vue"></script>
+		<script type="application/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    	<script type="application/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    	<div id="mapid" style = "height: 250px; width: auto"></div>
+		<script type="application/javascript" src="createmap.js"></script>
+		<script type="application/javascript">
+			var app;
+			var crime_api_url;
+
+
+			function Prompt() {
+				//console.log('Yes');
+	            $("#dialog-form").dialog({
+	                autoOpen: true,
+	                modal: true,
+	                width: "360px",
+	                buttons: {
+	                    "Ok": function() {
+	                        var prompt_input = $("#prompt_input");
+	                        Init(prompt_input.val());
+	                        $(this).dialog("close");
+	                    },
+	                    "Cancel": function() {
+	                        $(this).dialog("close");
+	                    }
+	                }
+	            });
+	        }
+
+			function Init(crime_api_url) {
+			    app = new Vue({
+			        el: "#app",
+			        data: 
+			        	{
+			        		crime_api_url: '',
+			        		crimes: {
+
+			        		},
+			        		codes: ['rape', 'theft'],
+			        		neighborhoods: {
+			        			N1: {name: "Conway/Battlecreek/Highwood", count: 0, latlon: [44.949583, -93.018998]},
+								N2: {name: "Greater East Side", count: 0, latlon: [44.977413, -93.025327]},
+								N3: {name: "West Side", count: 0, latlon: [44.933553, -93.083709]},
+								N4: {name: "Dayton's Bluff", count: 0, latlon: [44.956374, -93.060962]},
+								N5: {name: "Payne/Phalen", count: 0, latlon: [44.978519, -93.066275]},
+								N6: {name: "North End", count: 0, latlon: [44.976919, -93.112771]},
+								N7: {name: "Thomas/Dale(Frogtown)", count: 0, latlon: [44.960916, -93.123018]},
+								N8: {name: "Summit/University", count: 0, latlon: [44.948429, -93.130479]},
+								N9: {name: "West Seventh", count: 0, latlon: [44.930033, -93.123172]},
+								N10: {name: "Como", count: 0, latlon: [44.982312, -93.149042]},
+								N11: {name: "Hamline/Midway", count: 0, latlon: [44.962993, -93.162742]},
+								N12: {name: "St. Anthony", count: 0, latlon: [44.972917, -93.197787]},
+								N13: {name: "Union Park", count: 0, latlon: [44.949893, -93.176716]},
+								N14: {name: "Macalester-Groveland", count: 0, latlon: [44.934119, -93.175105]},
+								N15: {name: "Highland", count: 0, latlon: [44.910549, -93.173354]},
+								N16: {name: "Summit Hill", count: 0, latlon: [44.937188, -93.136739]},
+								N17: {name: "Capitol River", count: 0, latlon: [44.947789, -93.100049]}
+			        		},
+			        		'view_latlon': [44.9537, -93.0900],
+			        		'view_address': "",
+			        		checkedCases: [],
+			        		bounds: [(44.991548, -93.207680), (44.889845, -93.002029)],
+			        		filters: {incident_type: [], neighborhood_name: [], start_date: '', end_date: '', start_time: '', end_time: ''},
+			        		violent_crimes: ['Agg. Assault Dom.', 'Agg. Assault Dom', 'Homicide', 'Rape', 'Robbery', 'Simple Asasult Dom.', 'Agg. Assault'],
+			        		property_crimes: ['Arson', 'Burglary', 'Graffiti', 'Vandalism', 'Theft', 'Auto Theft'],
+			        		other_crimes: ['Community Engagement Event', 'Discharge', 'Narcotics', 'Other', 'Proactive Police Visit']  	
+							
+			        	}
+			    });
+			    console.log(crime_api_url);
+			    app.crime_api_url = crime_api_url;
+			    console.log(crime_api_url + 'incidents?start_date=2019-10-01&end_date=2019-11-01&limit=10000');
+			 	$.ajax(crime_api_url + 'incidents?start_date=2019-10-01&end_date=2019-11-01&limit=10000', {
+				  success: (data) => {
+				  	console.log(data);
+				  	app.crimes = data;
+				  	/*
+				  	I19244992: Object
+					block: (...)
+					code: (...)
+					date: (...)
+					incident: (...)
+					neighborhood_number: (...)
+					police_grid: (...)
+					time: (...)
+					*/
+					
+					for(let i=0; i<Object.keys(app.crimes).length; i++)
+					{
+						let crime = app.crimes[Object.keys(app.crimes)[i]];
+						//console.log(crime);
+						//console.log(app.neighborhoods['N'+crime.neighborhood_number].count)
+						app.neighborhoods['N'+crime.neighborhood_number].count = app.neighborhoods['N'+crime.neighborhood_number].count + 1;
+					}
+					 
+					for(let i = 1; i < Object.keys(app.neighborhoods).length + 1; i++)
+					{
+						L.marker(app.neighborhoods['N'+i].latlon, {icon: new L.divIcon({html: ' '+app.neighborhoods['N'+i].count+'', iconSize: 20, bgPos: [10,10]}), title: app.neighborhoods['N'+i].name}).addTo(mymap);
+						
+
+						//console.log(app.neighborhoods['N'+i].name);
+					}
+
+				  },
+				  error: (err) => { console.log(err) }
+				});
+
+				
+				/*L.marker([44.947789, -93.100049]).addTo(mymap); //Capitol River
+				L.marker([44.937188, -93.136739]).addTo(mymap); //Summit Hill
+				L.marker([44.910549, -93.173354]).addTo(mymap); //Highland
+				L.marker([44.934119, -93.175105]).addTo(mymap); //Macalester-Groveland
+				L.marker([44.949893, -93.176716]).addTo(mymap); //Union Park
+				L.marker([44.972917, -93.197787]).addTo(mymap); //St. Anthony
+				L.marker([44.962993, -93.162742]).addTo(mymap); //Hamline/Midway
+				L.marker([44.982312, -93.149042]).addTo(mymap); //Como
+				L.marker([44.930033, -93.123172]).addTo(mymap); //West Seventh
+				L.marker([44.948429, -93.130479]).addTo(mymap); //Summit/University
+				L.marker([44.960916, -93.123018]).addTo(mymap); //Thomas/Dale(frogtown)
+				L.marker([44.976919, -93.112771]).addTo(mymap); //North end
+				L.marker([44.933553, -93.083709]).addTo(mymap); //Westside
+				L.marker([44.977413, -93.025327]).addTo(mymap); //Greater East Side				
+				L.marker([44.949583, -93.018998]).addTo(mymap); //Conway/battle creek
+				L.marker([44.978519, -93.066275]).addTo(mymap); //Payne-Phalen
+				L.marker([44.956374, -93.060962]).addTo(mymap);*/
+			};
+
+			function SubmitLatLon(event){
+				console.log(app.view_latlon);
+				lat = app.view_latlon.split(',');
+				console.log(lat);
+				let coords = L.latLng(lat[0],lat[1]);
+				console.log(coords);
+				mymap.setView(coords, 16);
+			}
+
+			function SubmitAddress(address){
+				console.log(app.view_address);
+				$.ajax('https://nominatim.openstreetmap.org/search?q='+app.view_address+'+st+paul&format=json&limit=1', {
+					success: (data) => {
+					  	console.log(data);
+						  if(Array.isArray(data) && data.length) {
+						  	let coords = L.latLng(data[0].lat, data[0].lon);
+						  	console.log(data[0].lon);
+						  	mymap.setView(coords, 18);
+						  } else {
+						  	alert('Address not found')
+						  }
+
+
+					},
+				  	error: (err) => { console.log(err) }
+				});
+				//L.map('mapid').setView(latlon, 12);
+			}
+
+			function clickCase(event){
+				
+
+			}
+
+			function filterCrimes(event){
+				console.log(app.filters);
+
+				/*
+				end_date: "2019-10-22"
+				end_time: "12:00"
+				incident_type: Array(4)
+					0: "Agg. Assault"
+					1: "Homicide"
+					2: "Other"
+					3: "Proactive Police Visit"
+				neighborhood_name: Array(3)
+					0: "Greater East Side"
+					1: "West Side"
+					2: "Dayton's Bluff"
+				start_date: "2019-10-08"
+				start_time: "00:00"
+				*/
+
+				//let nn = app.neighborhoods[n+app.filters.neighborhood_number]
+				let url = app.crime_api_url + 'incidents?limit=200';
+				if(app.filters.start_date != "") {
+					url = url + '&start_date='+app.filters.start_date;
+				}
+
+				if(app.filters.end_date != "") {
+					url = url + '&end_date='+app.filters.end_date;
+				}
+				if(app.filters.incident_type != []) {
+					url = url + '&incident_type='+app.filters.end_date;
+				}
+				console.log(app.filters.incident_type)
+				console.log(url);
+				$.ajax(url, {
+				  success: (data) => {
+				  	console.log(data);
+				  	let template = {};
+				  	for(let i = 0; i < Object.keys(data).length; i++) {
+				  		let key = Object.keys(data)[i];
+				  		//console.log(data[key].time);
+				  		//onsole.log(app.filters.end_time);
+				  		if(data[key].time <= app.filters.end_time & data[key].time >= app.filters.start_time) {
+					  		template[key] = data[key];
+					  	};
+				  	};
+				  	console.log(template);
+				  	app.crimes = template;
+				  	for(let i=0; i<Object.keys(app.crimes).length; i++)
+					{
+						let crime = app.crimes[Object.keys(app.crimes)[i]];
+						//console.log(crime);
+						//console.log(app.neighborhoods['N'+crime.neighborhood_number].count)
+						app.neighborhoods['N'+crime.neighborhood_number].count = app.neighborhoods['N'+crime.neighborhood_number].count + 1;
+					}
+					 
+					for(let i = 1; i < Object.keys(app.neighborhoods).length + 1; i++)
+					{
+						L.marker(app.neighborhoods['N'+i].latlon, {icon: new L.divIcon({html: ' '+app.neighborhoods['N'+i].count+'', iconSize: 20, bgPos: [10,10]}), title: app.neighborhoods['N'+i].name}).addTo(mymap);
+						
+
+						//console.log(app.neighborhoods['N'+i].name);
+					}
+
+				  }, 
+				  error: (err) => { console.log(err) }
+				});
+
+		        function Init(crime_api_url) {
+		            console.log(crime_api_url);
+		        }
+
+				
+			}
+		</script>
+	</head>
+	<body onload="Prompt()">
+			<a href='about.html'>About</a>
+
+			<div id="dialog-form">
+		        <label for="name">URL for St. Paul Crime API:</label>
+		        <input type="text" id="prompt_input" class="text ui-widget-content ui-corner-all" style="width: 320px;" />
+		    </div>
+			<div id="app">
+				<div id=Searches>
+					<H1>Search</H1>
+					<input type = "text" v-model="view_latlon" :placeholder="view_latlon" class = 'search'/>
+					<button type ="button" @click="SubmitLatLon">Send</button>
+					<input type = "text" v-model="view_address" :placeholder="view_address" class = 'search'/>
+					<button type ="button" @click="SubmitAddress">Send</button>
+				</div>
+			<H1>Filters</H1>
+			<select name="Crimes" v-model="filters.incident_type" height="500px" multiple>
+				<option value='Agg. Assault'>Agg. Assault</option>
+				<option value='Agg. Assault Dom.'>Agg. Assault Dom.</option>
+				<option value='Auto Theft'>Auto Theft</option>
+				<option value='Arson'>Arson</option>
+				<option value='Burglary'>Burglary</option>
+				<option value='Community Engagement Event'>Community Engagement Event</option>
+				<option value='Discharge'>Discharge</option>
+				<option value='Graffiti'>Graffiti</option>
+				<option value='Homicide'>Homicide</option>
+				<option value='Narcotics'>Narcotics</option>
+				<option value='Other'>Other</option>
+				<option value='Proactive Police Visit'>Proactive Police Visit</option>
+				<option value='Rape'>Rape</option>	
+				<option value='Robbery'>Robbery</option>
+				<option value='Simple Asasult Dom.'>Simple Asasult Dom.</option>
+				<option value='Theft'>Theft</option>
+				<option value='Vandalism'>Vandalism</option>
+			</select>
+			<select name="Neighborhood" v-model="filters.neighborhood_name" multiple>
+			  <option value="Conway/Battlecreek/Highwood">Conway/Battlecreek/Highwood</option>
+			  <option value="Greater East Side">Greater East Side</option>
+			  <option value="West Side">West Side</option>
+			  <option value="Dayton's Bluff">Dayton's Bluff</option>
+			  <option value="North End">North End</option>
+			  <option value="Payne/Phalen">Payne/Phalen</option>
+			  <option value="Thomas/Dale(Frogtown)">Thomas/Dale(Frogtown)</option>
+			  <option value="Summit/University">Summit/University</option>
+			  <option value="West Seventh">West Seventh</option>
+			  <option value="Como">Como</option>
+			  <option value="Hamline/Midway">Hamline/Midway</option>
+			  <option value="St. Anthony">St. Anthony</option>
+			  <option value="Union Park">Union Park</option>
+			  <option value="Macalester-Groveland">Macalester-Groveland</option>
+			  <option value="Highland">Highland</option>
+			  <option value="Summit Hill">Summit Hill</option>
+			  <option value="Capitol River">Capitol River</option>
+			</select>
+			<input type = "date" v-model="filters.start_date"/>
+
+			<input type = "date" v-model="filters.end_date"/>
+
+			<input type = "time" v-model="filters.start_time"/>
+
+			<input type = "time" v-model="filters.end_time"/>
+
+			<button type ="button" @click="filterCrimes">Filter</button>
+			
+				<div class="scroll_table">
+		            <table style = "max-height: 23.5rem;
+		    						max-width: 940px;
+		    						display: inline-block;
+		    						overflow: scroll;
+		    						border: solid 1px black;">
+		                <thead>
+		                	<legend><b>Red:</b> <span class="violent">Violent Crimes</span> <b>Green</b>: <span class="property">Property Crimes</span> <b>Blue:</b> <span class="other">Other Crimes</span></legend>
+		                    <tr>
+		                        <th>Case</th>
+		                        <th>Date</th>
+		                        <th>Time</th>
+		                        <th>Incident</th>
+		                        <th>Grid</th>
+		                        <th>Neighborhood</th>
+		                        <th>Block</th>
+		                    </tr>
+		                </thead>
+		                <tbody>
+		                	<tr v-for="(i,k) in crimes" v-if="mymap.getBounds().contains(app.neighborhoods['N'+i.neighborhood_number].latlon)" 
+		                	v-bind:class="{'violent':(violent_crimes.includes(i.incident)), 'property':(property_crimes.includes(i.incident)), 'other':(other_crimes.includes(i.incident))}" >
+		                		<td>{{ k }}</td>
+				        		<td>{{ i.date }}</td>
+				        		<td>{{ i.time }}</td>
+				        		<td>{{ i.incident }}</td>
+				        		<td>{{ i.police_grid }}</td>
+				        		<td>{{ app.neighborhoods['N'+i.neighborhood_number].name }}</td>
+				        		<td>{{ i.block }}</td>
+				        		<td>
+				        			<input type="checkbox" id='checkbox'>
+									<label></label>
+								</td>
+								<td></td>
+
+		                	</tr>
+		                </tbody>
+		            </table>
+		        </div>
+	    	</div>
+	</body>
+</html>

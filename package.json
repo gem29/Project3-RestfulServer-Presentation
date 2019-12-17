@@ -1,0 +1,30 @@
+{
+    "name": "dynamic-webserver",
+    "version": "0.0.0",
+    "description": "RESTful API using St. Paul crime data",
+    "author": {
+        "name": "George McGivern",
+        "email": "mcgi7746@stthomas.edu"
+    },
+    "contributors": [
+        {
+            "name": "Khalid Almutairi",
+            "email": "almu2716@stthomas.edu"
+        },
+        {
+            "name": "George McGivern",
+            "email": "mcgi7746@stthomas.edu"
+        }
+    ],
+    "main": "server.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gem29/Project3-RESTfulServer"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "express": "^4.17.1",
+        "js2xmlparser": "^4.0.0",
+        "sqlite3": "^4.1.0"
+    }
+}
